@@ -1,0 +1,17 @@
+.place-list {
+   list-style: none;
+   margin: 1rem auto;
+   padding: 0;
+   width: 90%;
+   max-width: 40rem;
+   padding-bottom: 10px;
+   text-align: center;
+   font-size: 1.1em;
+}
+.place-list:hover {
+   transform: scale(1) !important;
+}
+.no-title {
+   margin-top: 4rem;
+   text-align: center;
+}
