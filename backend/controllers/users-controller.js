@@ -43,7 +43,10 @@ const login = async (req, res, next) => {
       return next(error);
    }
 
-   res.json({ message: 'Logged in!' });
+   res.json({
+      message: 'Logged in!',
+      user: existingUser.toObject({ getters: true }),
+   });
 };
 
 const signup = async (req, res, next) => {
@@ -63,7 +66,7 @@ const signup = async (req, res, next) => {
       return next(error);
    }
    if (existingUser) {
-      const error = new HttpError('email already exists', 433);
+      const error = new HttpError('email already exists', 422);
       return next(error);
    }
 

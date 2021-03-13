@@ -14,11 +14,14 @@ import {
 } from 'react-router-dom';
 function App() {
    const [isLoggedIn, setIsLoggedIn] = useState(false);
-   const login = useCallback(() => {
+   const [userId, setUserId] = useState();
+   const login = useCallback((uid) => {
+      setUserId(uid);
       setIsLoggedIn(true);
    }, []);
    const logout = useCallback(() => {
       setIsLoggedIn(false);
+      setUserId(null);
    }, []);
 
    let routes;
@@ -59,7 +62,12 @@ function App() {
    }
    return (
       <AuthContext.Provider
-         value={{ isLoggedIn: isLoggedIn, login: login, logout: logout }}>
+         value={{
+            isLoggedIn: isLoggedIn,
+            login: login,
+            logout: logout,
+            userId: userId,
+         }}>
          <Router>
             <MainNavigation />
 
