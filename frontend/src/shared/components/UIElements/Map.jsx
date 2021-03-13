@@ -16,7 +16,10 @@ const Map = (props) => {
             }),
          ],
          view: new window.ol.View({
-            center: window.ol.proj.fromLonLat([center.lng, center.lat]),
+            center: window.ol.proj.fromLonLat([
+               center.lng,
+               center.lat,
+            ]),
             zoom: zoom,
          }),
       });
