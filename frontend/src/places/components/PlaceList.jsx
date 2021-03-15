@@ -5,6 +5,7 @@ import Button from '../../shared/components/FormElements/Button';
 import './PlaceList.css';
 const PlaceList = (props) => {
    if (props.items.length === 0) {
+      console.log(props.items.length);
       return (
          <Card className="place-list">
             <h1>No Places Found</h1>
@@ -24,6 +25,7 @@ const PlaceList = (props) => {
                address={place.address}
                creatorID={place.creatorID}
                coordinates={place.location}
+               onDelete={props.onDeletePlace}
             />
          ))}
       </ul>

@@ -1,4 +1,6 @@
 import React, { useContext } from 'react';
+import { useHistory } from 'react-router-dom';
+
 import { useForm } from '../../shared/hooks/form-hook';
 import { useHttpClient } from '../../shared/hooks/http-hook';
 import { AuthContext } from '../../shared/context/auth-context';
@@ -13,6 +15,8 @@ import {
 import './NewPlace.css';
 
 const NewPlace = () => {
+   const history = useHistory();
+
    const { isLoading, error, sendRequest, clearError } = useHttpClient();
    const auth = useContext(AuthContext);
    const [formState, inputHandler] = useForm({
@@ -46,6 +50,7 @@ const NewPlace = () => {
                'Content-Type': 'application/json',
             }
          );
+         history.push('/' + auth.userId + '/places');
       } catch (error) {}
    };
 

@@ -1,41 +1,26 @@
-import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
-import Card from '../../shared/components/UIElements/Card';
+import React, { useEffect, useState, useContext } from 'react';
+import { useParams, useHistory } from 'react-router-dom';
+
 import Input from '../../shared/components/FormElements/Input';
 import Button from '../../shared/components/FormElements/Button';
+import Card from '../../shared/components/UIElements/Card';
+import LoadingSpinner from '../../shared/components/UIElements/LoadingSpinner';
+import ErrorModal from '../../shared/components/UIElements/ErrorModal';
 import {
    VALIDATOR_REQUIRE,
    VALIDATOR_MINLENGTH,
 } from '../../shared/util/validators';
 import { useForm } from '../../shared/hooks/form-hook';
+import { useHttpClient } from '../../shared/hooks/http-hook';
+import { AuthContext } from '../../shared/context/auth-context';
 import './NewPlace.css';
 
-const DUMMY_PLACES = [
-   {
-      id: 'p1',
-      title: 'La Sagrada Familia',
-      image:
-         'https://images.adsttc.com/media/images/5cff/5ec5/284d/d16d/6a00/1111/large_jpg/1.jpg?1560239805',
-      address: 'Carrer de Mallorca, 401, 08013 Barcelona, Spain',
-      location: { lat: 41.4030154, lng: 2.1729796 },
-      creator: 'u1',
-      description:
-         'The Basílica de la Sagrada Família, is a large unfinished Roman Catholic minor basilica in the Eixample district of Barcelona, Catalonia, Spain',
-   },
-   {
-      id: 'p2',
-      title: 'Adams Lookout',
-      image:
-         'http://www.workthere.com/media/773567/kantoorruimte-huren-amsterdam-adam-tower-6.jpg',
-      address: 'Overhoeksplein 5, 1031 KS Amsterdam, Netherlands',
-      location: { lat: 52.383863, lng: 4.900161 },
-      creator: 'u2',
-   },
-];
-
 const UpdatePlace = () => {
-   const [isLoading, setIsLoading] = useState(true);
+   const auth = useContext(AuthContext);
+   const { isLoading, error, sendRequest, clearError } = useHttpClient();
+   const [loadedPlace, setLoadedPlace] = useState();
    const placeId = useParams().placeId;
+   const history = useHistory();
 
    const [formState, inputHandler, setFormData] = useForm(
       {
@@ -51,77 +36,101 @@ const UpdatePlace = () => {
       false
    );
 
-   const identifiedPlace = DUMMY_PLACES.find((p) => p.id === placeId);
-
    useEffect(() => {
-      if (identifiedPlace) {
-         setFormData(
-            {
-               title: {
-                  value: identifiedPlace.title,
-                  isValid: true,
+      const fetchPlace = async () => {
+         try {
+            const responseData = await sendRequest(
+               `http://localhost:5000/api/places/${placeId}`
+            );
+            setLoadedPlace(responseData.place);
+            setFormData(
+               {
+                  title: {
+                     value: responseData.place.title,
+                     isValid: true,
+                  },
+                  description: {
+                     value: responseData.place.description,
+                     isValid: true,
+                  },
                },
-               description: {
-                  value: identifiedPlace.description,
-                  isValid: true,
-               },
-            },
-            true
-         );
-      }
-      setIsLoading(false);
-   }, [setFormData, identifiedPlace]);
+               true
+            );
+         } catch (err) {}
+      };
+      fetchPlace();
+   }, [sendRequest, placeId, setFormData]);
 
-   const placeUpdateSubmitHandler = (event) => {
+   const placeUpdateSubmitHandler = async (event) => {
       event.preventDefault();
-      console.log(formState.inputs);
+      try {
+         await sendRequest(
+            `http://localhost:5000/api/places/${placeId}`,
+            'PATCH',
+            JSON.stringify({
+               title: formState.inputs.title.value,
+               description: formState.inputs.description.value,
+            }),
+            {
+               'Content-Type': 'application/json',
+            }
+         );
+         history.push('/' + auth.userId + '/places');
+      } catch (err) {}
    };
 
-   if (!identifiedPlace) {
+   if (isLoading) {
       return (
          <div className="center">
-            <Card className="place-list">
+            <LoadingSpinner />
+         </div>
+      );
+   }
+
+   if (!loadedPlace && !error) {
+      return (
+         <div className="center">
+            <Card>
                <h2>Could not find place!</h2>
             </Card>
          </div>
       );
    }
 
-   if (isLoading) {
-      return (
-         <div className="center">
-            <h2>Loading...</h2>
-         </div>
-      );
-   }
-
    return (
-      <form className="place-form" onSubmit={placeUpdateSubmitHandler}>
-         <Input
-            id="title"
-            element="input"
-            type="text"
-            label="Title"
-            validators={[VALIDATOR_REQUIRE()]}
-            errorText="Please enter a valid title."
-            onInput={inputHandler}
-            initialValue={formState.inputs.title.value}
-            initialValid={formState.inputs.title.isValid}
-         />
-         <Input
-            id="description"
-            element="textarea"
-            label="Description"
-            validators={[VALIDATOR_MINLENGTH(5)]}
-            errorText="Please enter a valid description (min. 5 characters)."
-            onInput={inputHandler}
-            initialValue={formState.inputs.description.value}
-            initialValid={formState.inputs.description.isValid}
-         />
-         <Button type="submit" disabled={!formState.isValid}>
-            UPDATE PLACE
-         </Button>
-      </form>
+      <React.Fragment>
+         <ErrorModal error={error} onClear={clearError} />
+         {!isLoading && loadedPlace && (
+            <form
+               className="place-form"
+               onSubmit={placeUpdateSubmitHandler}>
+               <Input
+                  id="title"
+                  element="input"
+                  type="text"
+                  label="Title"
+                  validators={[VALIDATOR_REQUIRE()]}
+                  errorText="Please enter a valid title."
+                  onInput={inputHandler}
+                  initialValue={loadedPlace.title}
+                  initialValid={true}
+               />
+               <Input
+                  id="description"
+                  element="textarea"
+                  label="Description"
+                  validators={[VALIDATOR_MINLENGTH(5)]}
+                  errorText="Please enter a valid description (min. 5 characters)."
+                  onInput={inputHandler}
+                  initialValue={loadedPlace.description}
+                  initialValid={true}
+               />
+               <Button type="submit" disabled={!formState.isValid}>
+                  UPDATE PLACE
+               </Button>
+            </form>
+         )}
+      </React.Fragment>
    );
 };
 

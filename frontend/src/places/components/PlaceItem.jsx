@@ -1,13 +1,17 @@
 import React, { useContext, useState } from 'react';
-
+import { useHttpClient } from '../../shared/hooks/http-hook';
 import Card from '../../shared/components/UIElements/Card';
 import Button from '../../shared/components/FormElements/Button.jsx';
 import Modal from '../../shared/components/UIElements/Modal';
 import Map from '../../shared/components/UIElements/Map';
 import { AuthContext } from '../../shared/context/auth-context';
 import './PlaceItem.css';
+import ErrorModal from '../../shared/components/UIElements/ErrorModal';
+import LoadingSpinner from '../../shared/components/UIElements/LoadingSpinner';
+
 const PlaceItem = (props) => {
    const auth = useContext(AuthContext);
+   const { isLoading, error, sendRequest, clearError } = useHttpClient();
    const [showMap, setShowMap] = useState(false);
    const [showConfirmModal, setShowConfirmModal] = useState(false);
 
@@ -25,13 +29,21 @@ const PlaceItem = (props) => {
    const closeDeleteHandler = () => {
       setShowConfirmModal(false);
    };
-   const confirmDeleteHandler = () => {
-      console.log('deleted');
+   const confirmDeleteHandler = async () => {
+      setShowConfirmModal(false);
+      try {
+         await sendRequest(
+            `http://localhost:5000/api/places/${props.id}`,
+            'DELETE'
+         );
+         props.onDelete(props.id);
+      } catch (error) {}
       setShowConfirmModal(false);
    };
 
    return (
       <React.Fragment>
+         <ErrorModal error={error} onClear={clearError} />
          <Modal
             show={showMap}
             onCancel={closeModalHandler}
@@ -59,12 +71,13 @@ const PlaceItem = (props) => {
                </React.Fragment>
             }>
             <p>
-               Are You sure you want to delete this Place? this action can not
-               be undone thereafter
+               Are You sure you want to delete this Place? this action can
+               not be undone thereafter
             </p>
          </Modal>
          <li className="place-item">
             <Card className="place-item__content">
+               {isLoading && <LoadingSpinner asOverlay />}
                <div className="place-item__image">
                   <img src={props.image} alt="props.title" />
                </div>
@@ -77,10 +90,10 @@ const PlaceItem = (props) => {
                   <Button inverse onClick={openModalHandler}>
                      View on Map
                   </Button>
-                  {auth.isLoggedIn && (
+                  {auth.userId && auth.userId === props.creatorID && (
                      <Button to={`/places/${props.id}`}>Edit</Button>
                   )}
-                  {auth.isLoggedIn && (
+                  {auth.userId && auth.userId === props.creatorID && (
                      <Button danger onClick={openDeleteHandler}>
                         Delete
                      </Button>
