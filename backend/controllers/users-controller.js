@@ -1,6 +1,9 @@
 const { v4: uuid } = require('uuid');
 const { validationResult } = require('express-validator');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 
+const fileUpload = require('../middleware/file-upload');
 const HttpError = require('../models/http-error');
 const User = require('../models/user');
 
@@ -35,17 +38,62 @@ const login = async (req, res, next) => {
       return next(error);
    }
 
-   if (!existingUser || existingUser.password !== password) {
+   if (!existingUser) {
       const error = new HttpError(
          'Invalid credentials, could not log you in.',
-         401
+         403
       );
       return next(error);
    }
 
+   let isValidPassword = false;
+
+   try {
+      isValidPassword = await bcrypt.compare(
+         password,
+         existingUser.password
+      );
+   } catch (err) {
+      const error = new HttpError(
+         'Logging in failed, please try again later.',
+         500
+      );
+      return next(error);
+   }
+
+   if (!isValidPassword) {
+      const error = new HttpError(
+         'Logging in failed, please try again later.',
+         500
+      );
+      return next(error);
+   }
+
+   let token;
+   try {
+      token = jwt.sign(
+         {
+            userId: existingUser.id,
+            email: existingUser.email,
+         },
+         'asdfg12345',
+         {
+            expiresIn: '1h',
+         }
+      );
+   } catch (err) {
+      const error = new HttpError(
+         'logging up failed, please try again',
+         500
+      );
+   }
+
    res.json({
       message: 'Logged in!',
-      user: existingUser.toObject({ getters: true }),
+      userID: existingUser.id,
+      email: existingUser.email,
+      name: existingUser.name,
+      token: token,
    });
 };
 
@@ -70,12 +118,17 @@ const signup = async (req, res, next) => {
       return next(error);
    }
 
+   let hashedPassword;
+   try {
+      hashedPassword = await bcrypt.hash(password, 12);
+   } catch (error) {
+      return next(new HttpError('could not create user', 500));
+   }
    const createdUser = new User({
       name,
       email,
-      image:
-         'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTBB8ahwQS7B1cJ4ytsq37t6n9nH66Q2xXdXg&usqp=CAU',
-      password,
+      image: req.file.path,
+      password: hashedPassword,
       places: [],
    });
 
@@ -89,7 +142,30 @@ const signup = async (req, res, next) => {
       return next(error);
    }
 
-   res.status(201).json({ user: createdUser.toObject({ getters: true }) });
+   let token;
+   try {
+      token = jwt.sign(
+         {
+            userId: createdUser.id,
+            email: createdUser.email,
+         },
+         'asdfg12345',
+         {
+            expiresIn: '1h',
+         }
+      );
+   } catch (err) {
+      const error = new HttpError(
+         'Signing up failed, please try again',
+         500
+      );
+   }
+   res.status(201).json({
+      userID: createdUser.id,
+      email: createdUser.email,
+      name: createdUser.name,
+      token: token,
+   });
 };
 
 exports.getUsers = getUsers;

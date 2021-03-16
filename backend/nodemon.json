@@ -1,0 +1,9 @@
+{
+   "env": {
+      "DB_USER": "3abdo",
+      "DB_PASSWORD": "asdfg123",
+      "DB_NAME": "mern-travel",
+      "API_KEY": "...",
+      "JWT_KEY": "asdfg12345"
+   }
+}

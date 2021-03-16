@@ -4,6 +4,7 @@ import { AuthContext } from '../../context/auth-context';
 import './NavLinks.css';
 const NavLinks = () => {
    const auth = useContext(AuthContext);
+   console.log(localStorage.getItem('userData'));
    return (
       <ul className="nav-links">
          <li>
@@ -28,9 +29,17 @@ const NavLinks = () => {
             </li>
          )}
          {auth.isLoggedIn && (
-            <li>
-               <button onClick={auth.logout}>Logout </button>
-            </li>
+            <React.Fragment>
+               <li className="username">
+                  {localStorage.getItem('userData')
+                     ? JSON.parse(localStorage.getItem('userData')).name
+                     : auth.name}
+               </li>
+
+               <li>
+                  <button onClick={auth.logout}>Logout </button>
+               </li>
+            </React.Fragment>
          )}
       </ul>
    );

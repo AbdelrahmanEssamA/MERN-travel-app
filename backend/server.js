@@ -1,7 +1,9 @@
 const express = require('express');
+const path = require('path');
+
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
-
+const fs = require('fs');
 const placesRoutes = require('./routes/places-routes');
 const usersRoutes = require('./routes/users-route');
 const HttpError = require('./models/http-error');
@@ -9,6 +11,8 @@ const HttpError = require('./models/http-error');
 const app = express();
 
 app.use(bodyParser.json());
+
+app.use('/uploads/images', express.static(path.join('uploads', 'images')));
 
 app.use((req, res, next) => {
    res.setHeader('Access-Control-Allow-Origin', '*');
@@ -31,6 +35,11 @@ app.use((req, res, next) => {
 });
 
 app.use((error, req, res, next) => {
+   if (req.file) {
+      fs.unlink(req.file.path, () => {
+         console.log(error);
+      });
+   }
    if (res.headerSent) {
       return next(error);
    }
@@ -40,7 +49,7 @@ app.use((error, req, res, next) => {
 
 mongoose
    .connect(
-      'mongodb+srv://3abdo:asdfg123@cluster0.nexxf.mongodb.net/mern-travel?retryWrites=true&w=majority'
+      `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.nexxf.mongodb.net/mern-travel?retryWrites=true&w=majority`
    )
    .then(() => {
       app.listen(5000);
