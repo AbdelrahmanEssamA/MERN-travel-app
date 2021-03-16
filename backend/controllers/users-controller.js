@@ -76,7 +76,7 @@ const login = async (req, res, next) => {
             userId: existingUser.id,
             email: existingUser.email,
          },
-         'asdfg12345',
+         process.env.JWT_KEY,
          {
             expiresIn: '1h',
          }
@@ -149,7 +149,7 @@ const signup = async (req, res, next) => {
             userId: createdUser.id,
             email: createdUser.email,
          },
-         'asdfg12345',
+         process.env.JWT_KEY,
          {
             expiresIn: '1h',
          }
